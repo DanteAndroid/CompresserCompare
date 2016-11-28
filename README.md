@@ -2,6 +2,9 @@ Compare the most popular image compresser on Github.
 
 比较了下主流的[图片压缩库](#指的是哪些库)的效果。具体效果各位自行判断
 
+
+---
+
 ## 指的是哪些库？
 [Compressor](https://github.com/zetbaitsu/Compressor)、[鲁班](https://github.com/Curzibn/Luban)
 
