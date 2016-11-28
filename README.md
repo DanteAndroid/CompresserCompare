@@ -5,7 +5,7 @@ Compare the most popular image compresser on Github.
 
 ---
 
-## 指的是哪些库？
+## 对比的是哪些库？
 [Compressor](https://github.com/zetbaitsu/Compressor)、[鲁班](https://github.com/Curzibn/Luban)
 
 ## 如何添加新的压缩方法？
