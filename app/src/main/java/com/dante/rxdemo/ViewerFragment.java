@@ -103,7 +103,8 @@ public class ViewerFragment extends Fragment {
                 return;
             }
             imageView.setImageBitmap(picture);
-            getActivity().supportStartPostponedEnterTransition();
+            if (getActivity()!=null)            getActivity().supportStartPostponedEnterTransition();
+
         }
     }
 }
