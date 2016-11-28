@@ -1,10 +1,13 @@
 package com.dante.rxdemo;
 
-import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -20,6 +23,8 @@ import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.dante.rxdemo.adapter.ImageAdapter;
 import com.dante.rxdemo.model.Image;
 import com.dante.rxdemo.utils.Util;
+import com.gun0912.tedpermission.PermissionListener;
+import com.gun0912.tedpermission.TedPermission;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PICK_IMAGE_REQUEST = 1;
     private static final int CROP_REQUEST = 2;
-    private static final int REQUEST_VIEW = 3;
+    private static final int REQUEST_TAKE_PHOTO = 3;
+    private static final int REQUEST_VIEW = 4;
     @BindView(R.id.choose)
     Button choose;
     @BindView(R.id.recycler)
@@ -65,19 +71,29 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void load(File file) {
+        if (file == null) {
+            showToast("Can't load file.");
+            return;
+        }
+        int dataSize = adapter.getData().size();
         String type = compressType[adapter.getData().size()];
         String size = String.format("Size: %S", Util.getReadableSize(file.length()));
         Image image = new Image(file, type, size);
-        adapter.addData(image);
-        adapter.notifyDataSetChanged();
+        if (compressType.length > dataSize) {
+            if (dataSize == 0) adapter.notifyDataSetChanged();
+            adapter.addData(image);
+        }
     }
 
     @Override
     public void onActivityReenter(int resultCode, Intent data) {
         super.onActivityReenter(resultCode, data);
-        int position = PreferenceManager.getDefaultSharedPreferences(MainActivity.this)
-                .getInt("position", 0);
-        recycler.smoothScrollToPosition(position);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        int position = sp.getInt("position", -1);
+        if (position >= 0) {
+            sp.edit().remove("position").apply();//Remove after read it
+            recycler.smoothScrollToPosition(position);
+        }
     }
 
     @Override
@@ -105,11 +121,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void chooseImage(View v) {
-        adapter.getData().clear();
+        clearData();
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
+
+    private void clearData() {
+        adapter.setNewData(null);
+//        if (originalImage != null && originalImage.exists()) {
+//            if (!originalImage.delete()) {
+//                Log.w(TAG, "clearData: delete failed");
+//            }
+//        }
+}
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -141,15 +166,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             load(image);
+        } else if (requestCode == REQUEST_TAKE_PHOTO) {
+            load(originalImage);
         }
     }
 
-    private void clearCompressed() {
-//        compressedImage.setImageBitmap(null);
-//        compressedSize.setText("Size : -");
-//        compressedImageLB.setImageBitmap(null);
-//        compressedSizeLB.setText("Size : -");
-    }
 
 //    private void cropPhoto(Uri uri) {
 //        if (image == null)
@@ -226,7 +247,6 @@ public class MainActivity extends AppCompatActivity {
                 .subscribe(new Action1<File>() {
                     @Override
                     public void call(File file) {
-//                        compressdImage = Util.drawableToFile(R.drawable.mm, MainActivity.this);
                         load(file);
                     }
                 }, new Action1<Throwable>() {
@@ -249,4 +269,45 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    public void takePhoto(View view) {
+        clearData();
+        checkPermission();
+    }
+
+    private void take() {
+        originalImage = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "temp.jpg");
+        if (!originalImage.exists()) {
+            try {
+                boolean result = originalImage.createNewFile();
+                if (!result) {
+                    showToast("Unable to create file, please check permission.");
+                    return;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(originalImage));
+        startActivityForResult(intent, REQUEST_TAKE_PHOTO);
+    }
+
+    private void checkPermission() {
+        new TedPermission(this)
+                .setPermissionListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted() {
+                        take();
+                    }
+
+                    @Override
+                    public void onPermissionDenied(ArrayList<String> arrayList) {
+                        Toast.makeText(MainActivity.this, "Permission denied, taking photo will not work.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setDeniedMessage(R.string.permission_hint)
+                .setPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .check();
+    }
 }
