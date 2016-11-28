@@ -1,4 +1,5 @@
 Compare the most popular image compresser on Github.
+
 比较了下主流的图片压缩库的效果。具体效果各位自行判断
 
 ## 如何添加新的压缩方法？
