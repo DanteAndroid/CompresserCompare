@@ -34,4 +34,5 @@ dependencies {
     compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.2.0'
     compile 'id.zelory:compressor:1.0.4'
     compile 'top.zibin:Luban:1.0.9'
+    compile 'com.google.guava:guava:20.0'
 }

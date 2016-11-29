@@ -1,10 +1,13 @@
 package com.dante.rxdemo;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
@@ -29,7 +32,9 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 
 import butterknife.BindView;
@@ -42,8 +47,6 @@ import rx.schedulers.Schedulers;
 import top.zibin.luban.Luban;
 import top.zibin.luban.OnCompressListener;
 
-import static android.R.attr.duration;
-import static com.dante.rxdemo.App.context;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -60,14 +63,12 @@ public class MainActivity extends AppCompatActivity {
 
     private File originalImage;
     private File image;
-    private File compressdImage;
     private LinearLayoutManager layoutManager;
     private ImageAdapter adapter;
     /*
     Add new compress tool here,
     and add the method with same name(`compressImage` will find and execute it)
     */
-
     private String[] compressType = {"Original", "Compressor", "Luban"};
 
 
@@ -140,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void deleteCache() {
-        File dir = getExternalCacheDir();
+        File dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         if (dir != null && dir.isDirectory()) {
             String[] children = dir.list();
             for (String file : children) {
@@ -156,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_CANCELED) {
-            Log.i(TAG, "onActivityResult: canceld");
+            Log.i(TAG, "onActivityResult: canceled");
 
         } else if (requestCode == PICK_IMAGE_REQUEST) {
             if (data == null) {
@@ -169,7 +170,6 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 //                cropPhoto(data.getData());
-
             }
         } else if (requestCode == CROP_REQUEST) {
             Bundle extras = data.getExtras();
@@ -186,7 +186,6 @@ public class MainActivity extends AppCompatActivity {
             load(originalImage, 0);
         }
     }
-
 
 //    private void cropPhoto(Uri uri) {
 //        if (image == null)
@@ -212,9 +211,8 @@ public class MainActivity extends AppCompatActivity {
 //    }
 
     public void compressImage(View v) {
-        if (adapter.getItemCount() <= 0) {
+        if (adapter.getItemCount() <= 0 || adapter.getItemCount() >= compressType.length) {
             chooseImage(null);
-        } else if (adapter.getItemCount() == compressType.length) {
             return;
         }
 
@@ -237,11 +235,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startViewer(View view, int position) {
-        Intent intent = new Intent(context, PictureActivity.class);
+        Intent intent = new Intent(this, PictureActivity.class);
         intent.putExtra("position", position);
         ArrayList<Image> data = (ArrayList<Image>) adapter.getData();
         intent.putParcelableArrayListExtra("data", data);
-        ActivityOptionsCompat options = ActivityOptionsCompat
+        ActivityOptionsCompat options = null;
+        options = ActivityOptionsCompat
                 .makeSceneTransitionAnimation(this, view, view.getTransitionName());
         ActivityCompat.startActivity(this, intent, options.toBundle());
     }
@@ -249,23 +248,22 @@ public class MainActivity extends AppCompatActivity {
 
     public void takePhoto(View view) {
         clearData();
-        checkPermission();
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            checkPermission();
+        } else {
+            take();
+        }
     }
 
     private void take() {
-        originalImage = new File(getExternalCacheDir(), System.currentTimeMillis() + ".jpg");
-        if (!originalImage.exists()) {
-            try {
-                boolean result = originalImage.createNewFile();
-                if (!result) {
-                    showToast("Unable to create file, please check permission.");
-                    return;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        try {
+            originalImage = File.createTempFile(timeStamp, ".jpg",
+                    getExternalFilesDir(Environment.DIRECTORY_PICTURES));
+            originalImage.deleteOnExit();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(originalImage));
         startActivityForResult(intent, REQUEST_TAKE_PHOTO);
@@ -285,10 +283,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .setDeniedMessage(R.string.permission_hint)
-                .setPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .check();
     }
-
 
     private void Luban() {
         final long start = System.currentTimeMillis();
@@ -328,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
                 }, new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
-                        showToast(throwable.getMessage());
+                        throwable.printStackTrace();
                     }
                 });
     }

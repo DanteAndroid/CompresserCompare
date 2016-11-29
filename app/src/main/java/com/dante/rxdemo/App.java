@@ -9,11 +9,12 @@ import android.content.Context;
 public class App extends Application {
 
     private static final String TAG = "Test";
-    public static Context context;
+    public  Context context;
 
     @Override
     public void onCreate() {
         super.onCreate();
         context = this;
     }
+
 }
