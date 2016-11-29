@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
@@ -31,6 +30,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -42,6 +42,7 @@ import rx.schedulers.Schedulers;
 import top.zibin.luban.Luban;
 import top.zibin.luban.OnCompressListener;
 
+import static android.R.attr.duration;
 import static com.dante.rxdemo.App.context;
 
 public class MainActivity extends AppCompatActivity {
@@ -70,18 +71,25 @@ public class MainActivity extends AppCompatActivity {
     private String[] compressType = {"Original", "Compressor", "Luban"};
 
 
-    private void load(File file) {
-        if (file == null) {
+    private void load(File file, long time) {
+        if (file == null || !file.exists()) {
             showToast("Can't load file.");
             return;
         }
         int dataSize = adapter.getData().size();
-        String type = compressType[adapter.getData().size()];
-        String size = String.format("Size: %S", Util.getReadableSize(file.length()));
-        Image image = new Image(file, type, size);
+        //if compress type equals data size
+        //no need to add data (need clear instead)
         if (compressType.length > dataSize) {
+            String type = compressType[adapter.getData().size()];
+            Log.i(TAG, "load: size " + file.length());
+            String size = String.format("Size: %S", Util.getReadableSize(file.length()));
+            String duration = String.format(Locale.getDefault(), "Duration: %d ms", time);
+            if (time == 0) duration = "N/A";
+            Image image = new Image(file, type, size, duration);
             if (dataSize == 0) adapter.notifyDataSetChanged();
             adapter.addData(image);
+        } else {
+            showToast("Compress finished.");
         }
     }
 
@@ -128,19 +136,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void clearData() {
-        adapter.setNewData(null);
-//        if (originalImage != null && originalImage.exists()) {
-//            if (!originalImage.delete()) {
-//                Log.w(TAG, "clearData: delete failed");
-//            }
-//        }
-}
+        adapter.getData().clear();
+    }
+
+    private void deleteCache() {
+        File dir = getExternalCacheDir();
+        if (dir != null && dir.isDirectory()) {
+            String[] children = dir.list();
+            for (String file : children) {
+                boolean result = new File(dir, file).delete();
+                if (!result) {
+                    Log.w(TAG, "deleteCache: failed ");
+                }
+            }
+        }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_CANCELED) {
-            if (requestCode == PICK_IMAGE_REQUEST) showToast("Pick image canceled.");
+            Log.i(TAG, "onActivityResult: canceld");
 
         } else if (requestCode == PICK_IMAGE_REQUEST) {
             if (data == null) {
@@ -148,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 try {
                     originalImage = FileUtil.from(this, data.getData());
-                    load(originalImage);
+                    load(originalImage, 0);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -165,9 +181,9 @@ public class MainActivity extends AppCompatActivity {
                     Log.i(TAG, "bitmap : " + bitmap.getWidth() + " * " + bitmap.getHeight());
                 }
             }
-            load(image);
+            load(image, 0);
         } else if (requestCode == REQUEST_TAKE_PHOTO) {
-            load(originalImage);
+            load(originalImage, 0);
         }
     }
 
@@ -195,10 +211,6 @@ public class MainActivity extends AppCompatActivity {
 //        startActivityForResult(crop, CROP_REQUEST);
 //    }
 
-    public void showToast(String text) {
-        Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
-    }
-
     public void compressImage(View v) {
         if (adapter.getItemCount() <= 0) {
             chooseImage(null);
@@ -216,47 +228,13 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
     }
 
-    private void Luban() {
-        Luban.get(this).load(originalImage)
-                .putGear(Luban.THIRD_GEAR)
-                .setCompressListener(new OnCompressListener() {
-                    @Override
-                    public void onStart() {
-                    }
-
-                    @Override
-                    public void onSuccess(File file) {
-                        load(file);
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        e.printStackTrace();
-                    }
-                }).launch();
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        deleteCache();
     }
-
-    private void Compressor() {
-        Compressor.getDefault(this)
-                .compressToFileAsObservable(originalImage)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Action1<File>() {
-                    @Override
-                    public void call(File file) {
-                        load(file);
-                    }
-                }, new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        showToast(throwable.getMessage());
-                    }
-                });
-    }
-
 
     private void startViewer(View view, int position) {
         Intent intent = new Intent(context, PictureActivity.class);
@@ -275,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void take() {
-        originalImage = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "temp.jpg");
+        originalImage = new File(getExternalCacheDir(), System.currentTimeMillis() + ".jpg");
         if (!originalImage.exists()) {
             try {
                 boolean result = originalImage.createNewFile();
@@ -310,4 +288,53 @@ public class MainActivity extends AppCompatActivity {
                 .setPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .check();
     }
+
+
+    private void Luban() {
+        final long start = System.currentTimeMillis();
+        Luban.get(this).load(originalImage)
+                .putGear(Luban.THIRD_GEAR)
+                .setCompressListener(new OnCompressListener() {
+                    @Override
+                    public void onStart() {
+
+                    }
+
+                    @Override
+                    public void onSuccess(File file) {
+                        long duration = System.currentTimeMillis() - start;
+                        load(file, duration);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+                }).launch();
+    }
+
+    private void Compressor() {
+        final long start = System.currentTimeMillis();
+        Compressor.getDefault(this)
+                .compressToFileAsObservable(originalImage)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Action1<File>() {
+                    @Override
+                    public void call(File file) {
+                        long duration = System.currentTimeMillis() - start;
+                        load(file, duration);
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        showToast(throwable.getMessage());
+                    }
+                });
+    }
+
+    public void showToast(String text) {
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+    }
+
 }
