@@ -12,4 +12,4 @@ Compare the most popular image compresser on Github.
 在`MainActivity`中的`compressType`变量中加入新的压缩名字，并且用这个名字写一个压缩方法即可。
 Add new String of method's name to `compressType` in `MainActivity`, and corresponding compress method with the same name.
 
-<a href="s.png"><img src="s.png" width="60%"/></a>
+<a href="s.png"><img src="ss.png" width="60%"/></a>
