@@ -6,7 +6,6 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="colorControlHighlight">@color/whiteLight</item>
     </style>
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
@@ -21,5 +20,9 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:backgroundDimEnabled">true</item>
+    </style>
+    <style name="Raised" parent="Theme.AppCompat.Light">
+        <item name="colorButtonNormal">@color/colorAccentLight</item>
+        <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
 </resources>

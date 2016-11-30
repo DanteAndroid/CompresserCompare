@@ -19,30 +19,25 @@
                       android:layout_height="match_parent">
             <Button
                 android:id="@+id/take"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:onClick="takePhoto"
+                android:textAllCaps="false"
+                style="@style/Widget.AppCompat.Button.Borderless"
                 android:text="Take photo"/>
-            <Button
-                android:id="@+id/choose"
-                android:layout_weight="1"
-                android:layout_marginLeft="6dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="chooseImage"
-                android:text="Choose image"/>
+
         </LinearLayout>
 
         <Button android:id="@+id/compress"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="4dp"
-                android:background="@color/colorAccentLight"
-                android:foreground="?android:selectableItemBackground"
-                android:onClick="compressImage"
-                android:text="Compress"
-                android:textColor="@color/whiteLight"/>
+                android:layout_height="48dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:theme="@style/Raised"
+                android:textColor="@color/whiteLight"
+                android:onClick="chooseImage"
+                android:text="choose Image" />
     </LinearLayout>
 
 </FrameLayout>

@@ -54,8 +54,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int CROP_REQUEST = 2;
     private static final int REQUEST_TAKE_PHOTO = 3;
     private static final int REQUEST_VIEW = 4;
-    @BindView(R.id.choose)
-    Button choose;
     @BindView(R.id.recycler)
     RecyclerView recycler;
     @BindView(R.id.compress)
@@ -166,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     originalImage = FileUtil.from(this, data.getData());
                     load(originalImage, 0);
+                    compressImage(null);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -184,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
             load(image, 0);
         } else if (requestCode == REQUEST_TAKE_PHOTO) {
             load(originalImage, 0);
+            compressImage(null);
         }
     }
 

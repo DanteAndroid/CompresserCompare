@@ -18,6 +18,7 @@ import java.text.DecimalFormat;
  * Created by yons on 16/9/19.
  */
 public class Util {
+
     public static Bitmap drawableToBitmap(Drawable drawable) {
         if (drawable instanceof BitmapDrawable) {
             return ((BitmapDrawable) drawable).getBitmap();

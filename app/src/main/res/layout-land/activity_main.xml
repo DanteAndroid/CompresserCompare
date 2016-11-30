@@ -2,43 +2,35 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
              android:layout_width="match_parent"
              android:layout_height="match_parent">
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-    </android.support.v7.widget.RecyclerView>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom">
         <Button
             android:id="@+id/take"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="6dp"
             android:layout_weight="1"
             android:onClick="takePhoto"
-            android:text="Take photo"/>
-        <Button
-            android:id="@+id/choose"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="6dp"
-            android:layout_weight="1"
-            android:onClick="chooseImage"
-            android:text="Choose image"/>
+            android:text="Take photo"
+            android:textAllCaps="false"/>
 
         <Button android:id="@+id/compress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="2dp"
-                android:layout_marginLeft="6dp"
                 android:layout_marginRight="6dp"
                 android:layout_weight="1"
-                android:background="@color/colorAccentLight"
-                android:foreground="?android:selectableItemBackground"
-                android:onClick="compressImage"
-                android:text="Compress"
-                android:textColor="@color/whiteLight"/>
+                android:onClick="chooseImage"
+                android:padding="2dp"
+                android:text="Choose image"
+                android:textColor="@color/whiteLight"
+                android:theme="@style/Raised"/>
     </LinearLayout>
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    </android.support.v7.widget.RecyclerView>
 </FrameLayout>
