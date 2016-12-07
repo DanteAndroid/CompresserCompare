@@ -1,6 +1,7 @@
 package com.dante.rxdemo;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -27,6 +28,7 @@ import com.dante.rxdemo.model.Image;
 import com.dante.rxdemo.utils.Util;
 import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
+import com.thefinestartist.builders.ActivityBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +37,7 @@ import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import butterknife.BindView;
@@ -53,15 +56,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int PICK_IMAGE_REQUEST = 1;
     private static final int CROP_REQUEST = 2;
     private static final int REQUEST_TAKE_PHOTO = 3;
-    private static final int REQUEST_VIEW = 4;
     @BindView(R.id.recycler)
     RecyclerView recycler;
     @BindView(R.id.compress)
     Button compress;
 
     private File originalImage;
-    private File image;
-    private LinearLayoutManager layoutManager;
     private ImageAdapter adapter;
     /*
     Add new compress tool here,
@@ -109,11 +109,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         initRecyclerView();
+        Log.i(TAG, getClass().getSimpleName() + " taskId: " + getTaskId());
+    }
 
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList("data", (ArrayList<Image>) adapter.getData());
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        List<Image> data = savedInstanceState.getParcelableArrayList("data");
+        adapter.setNewData(data);
     }
 
     private void initRecyclerView() {
-        layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         recycler.setHasFixedSize(true);
         recycler.setLayoutManager(layoutManager);
         adapter = new ImageAdapter();
@@ -172,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (requestCode == CROP_REQUEST) {
             Bundle extras = data.getExtras();
-            Bitmap bitmap = null;
+            Bitmap bitmap;
             if (extras != null) {
                 Log.i(TAG, "onActivityResult: extras not null");
                 bitmap = extras.getParcelable("data");
@@ -180,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.i(TAG, "bitmap : " + bitmap.getWidth() + " * " + bitmap.getHeight());
                 }
             }
-            load(image, 0);
+            load(originalImage, 0);
         } else if (requestCode == REQUEST_TAKE_PHOTO) {
             load(originalImage, 0);
             compressImage(null);
@@ -234,13 +248,21 @@ public class MainActivity extends AppCompatActivity {
         deleteCache();
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void startViewer(View view, int position) {
-        Intent intent = new Intent(this, PictureActivity.class);
-        intent.putExtra("position", position);
-        ArrayList<Image> data = (ArrayList<Image>) adapter.getData();
-        intent.putParcelableArrayListExtra("data", data);
-        ActivityOptionsCompat options = null;
-        options = ActivityOptionsCompat
+//        Intent intent = new Intent(this, PictureActivity.class);
+//        intent.putExtra("position", position);
+//        ArrayList<Image> data = (ArrayList<Image>) adapter.getData();
+//        intent.putParcelableArrayListExtra("data", data);
+//        ActivityOptionsCompat options= ActivityOptionsCompat
+//                .makeSceneTransitionAnimation(this, view, view.getTransitionName());
+//        ActivityCompat.startActivity(this, intent, options.toBundle());
+        Intent intent = new ActivityBuilder(PictureActivity.class)
+                .set("position", position)
+                .set("data", (ArrayList<Image>) adapter.getData())
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .buildIntent();
+        ActivityOptionsCompat options = ActivityOptionsCompat
                 .makeSceneTransitionAnimation(this, view, view.getTransitionName());
         ActivityCompat.startActivity(this, intent, options.toBundle());
     }
@@ -248,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void takePhoto(View view) {
         clearData();
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkPermission();
         } else {
             take();
@@ -287,6 +309,7 @@ public class MainActivity extends AppCompatActivity {
                 .check();
     }
 
+    @SuppressWarnings("unused")
     private void Luban() {
         final long start = System.currentTimeMillis();
         Luban.get(this).load(originalImage)
@@ -294,7 +317,6 @@ public class MainActivity extends AppCompatActivity {
                 .setCompressListener(new OnCompressListener() {
                     @Override
                     public void onStart() {
-
                     }
 
                     @Override
@@ -310,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
                 }).launch();
     }
 
+    @SuppressWarnings("unused")
     private void Compressor() {
         final long start = System.currentTimeMillis();
         Compressor.getDefault(this)

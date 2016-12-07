@@ -3,6 +3,8 @@ package com.dante.rxdemo;
 import android.app.Application;
 import android.content.Context;
 
+import com.thefinestartist.Base;
+
 /**
  * Created by yons on 16/9/19.
  */
@@ -15,6 +17,7 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         context = this;
+        Base.initialize(this);
     }
 
 }

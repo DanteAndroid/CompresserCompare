@@ -8,11 +8,14 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
 import com.dante.rxdemo.model.Image;
+import com.thefinestartist.annotations.Extra;
+import com.thefinestartist.binders.ExtrasBinder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +27,13 @@ import butterknife.ButterKnife;
 public class PictureActivity extends AppCompatActivity {
     private static final String TAG = "PictureActivity";
 
-    List<Image> data;
     List<Fragment> fragments = new ArrayList<>();
     @BindView(R.id.pager)
     ViewPager pager;
+    @Extra
     int position;
-    private DetailPagerAdapter adapter;
+    @Extra
+    List<Image> data;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,14 +41,15 @@ public class PictureActivity extends AppCompatActivity {
         setContentView(R.layout.activity_picture);
         ButterKnife.bind(this);
         supportPostponeEnterTransition();
-
-        data = getIntent().getParcelableArrayListExtra("data");
-        position = getIntent().getIntExtra("position", 0);
+//        data = getIntent().getParcelableArrayListExtra("data");
+//        position = getIntent().getIntExtra("position", 0);
+        ExtrasBinder.bind(this);
+        Log.i(TAG, getClass().getSimpleName()+ " taskId: " + getTaskId());
 
         for (int i = 0; i < data.size(); i++) {
             fragments.add(ViewerFragment.newInstance(data.get(i)));
         }
-        adapter = new DetailPagerAdapter(getSupportFragmentManager(), fragments, data.size());
+        DetailPagerAdapter adapter = new DetailPagerAdapter(getSupportFragmentManager(), fragments, data.size());
         pager.setAdapter(adapter);
         pager.setCurrentItem(position);
 
